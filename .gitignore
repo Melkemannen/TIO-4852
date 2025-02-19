@@ -1,0 +1,10 @@
+*.FCBak
+*.3mf
+*.stl
+*.zip
+*.tar
+*.gz
+*/tmp/
+*/tst/
+*.backup
+*.bak
