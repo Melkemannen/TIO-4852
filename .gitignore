@@ -10,3 +10,6 @@
 *.bak
 ~*
 .~*
+*.mat
+src/make_plots/input_files
+src/make_plots/output_files
