@@ -1,0 +1,4 @@
+- uses cup to increase by fixed amount.
+- first stepresponse is after 5 seconds.
+- each subsequent step response happens after 20 sec.
+        - stepresponses will happen at 5, 25, 45, 65, 85 ,105, 125
