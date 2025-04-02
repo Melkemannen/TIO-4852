@@ -10,7 +10,9 @@ NBUDP Udp;
 // the ip address to use
 IPAddress spanAddress(172, 16, 15, 14);
 
+// disable code relevant for NBIOT. write sensordata to serial output
 #define DISABLE_NBIOT
+
 #define TRIGGER_PIN 0
 #define ECHO_PIN 1
 
@@ -23,6 +25,7 @@ void setup() {
   digitalWrite(TRIGGER_PIN, LOW);
   pinMode(ECHO_PIN, INPUT);
   delay(1000);
+
 #ifndef DISABLE_NBIOT
   Serial.println("Connecting....");
   boolean connected = false;
@@ -60,7 +63,7 @@ uint16_t photoresistor_unfiltered[NUMBER_OF_SENSORS];
 int height_photoresistor, prev_height_photoresistor;
 const char *strings[] = { "A1:", "A2:", "A3:", "A4:", "A5:" };
 unsigned long delay_timer = 0;
-// value of the constant resistor
+// value of the constant resistor. foud by calibration
 float R1[NUMBER_OF_SENSORS] = {
   1000.0,
   1000.0,
@@ -68,7 +71,7 @@ float R1[NUMBER_OF_SENSORS] = {
   1000.0,
   1000.0,
 };
-// value of the photoresistor when it completly dark
+// value of the photoresistor when it completly dark. foud by calibration
 float R_dark[NUMBER_OF_SENSORS] = {
   967.0,
   994.0,
@@ -78,8 +81,9 @@ float R_dark[NUMBER_OF_SENSORS] = {
 };
 
 #define MOVING_AVERAGE_LENGTH 10
+
 #define M_A_val 10
-uint16_t FIR_scalars_divider[30] = {
+uint16_t FIR_scalars_divider[30] = { 
   M_A_val, M_A_val, M_A_val, M_A_val, M_A_val,
   M_A_val, M_A_val, M_A_val, M_A_val, M_A_val,
   M_A_val, M_A_val, M_A_val, M_A_val, M_A_val,
@@ -96,7 +100,10 @@ uint32_t ultrasonic_FIR_buffer[30];
 int ultrasonic_ringbuffer_ptr = 0;
 float height_ultrasonic;
 float prev_height_ultrasonic;
+// defines the minimum change that has to happen for a message to be sent
 float hysteresis_ultrasonic= 1.0;
+//defien zero point for height measurment
+#define POSITION_ULTRASONIC 21.0
 
 
 // the position of each photoresistor. used to convert from covered sensors to height_photoresistor.
@@ -113,16 +120,16 @@ void loop() {
 
 
 
-    //Serial.println("fasdfdadsfa");
     for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
       // FIR-filter. used as moving average.
       /*analog_read_buffer[i] = firFilter(photoresistor_FIR_buffer[i], MOVING_AVERAGE_LENGTH,
                                         FIR_scalars_divider, photoresistor_ringbuffer_ptr, analog_read_buffer[i]);
       //linearize. from "voltage" to light intensity
       analog_read_buffer[i] = linearize_photoresistor(R1[i], R_dark[i], analog_read_buffer[i], ANALOG_MAX);
-      */
+      
     }
     photoresistor_ringbuffer_ptr = (photoresistor_ringbuffer_ptr + 1) % MOVING_AVERAGE_LENGTH;
+    */
     for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
       if (i != REFFERENCE_MEASURMENT) {
         //intefrate hysterisys into the measurment to reduce flickering.
@@ -138,38 +145,43 @@ void loop() {
         }
       }
     }
-    // measure ment from ultrasonic sensor -> moving average filter -> h(t) -> hysterisys
+    // measurement from ultrasonic sensor -> moving average filter -> h(t) -> hysterisys
     unsigned long time_duration = ultrasonic_get_measurement_in_ns(TRIGGER_PIN, ECHO_PIN);
+    // FIR-filter. used as moving average
     /*time_duration = firFilter(ultrasonic_FIR_buffer, MOVING_AVERAGE_LENGTH,
                               FIR_scalars_divider, ultrasonic_ringbuffer_ptr, time_duration);
     ultrasonic_ringbuffer_ptr = (ultrasonic_ringbuffer_ptr + 1) % MOVING_AVERAGE_LENGTH;
     */
 
-    //Serial.println(time_duration);
-    // only send on change
+
     height_photoresistor = photosensor_position_centimeter[height_photoresistor];
-    height_ultrasonic = 21.0 - ultrasonic_time_to_distance(time_duration);
+
+    height_ultrasonic = POSITION_ULTRASONIC - ultrasonic_time_to_distance(time_duration);
 #ifndef DISABLE_NBIOT
+    // only send on change
     if (height_photoresistor != prev_height_photoresistor) {
       Serial.print("sent photoresistor value: ");
       Serial.println(height_photoresistor);
-      /*Udp.beginPacket(spanAddress, spanPort);
-      udp.write(0x01);
+      Udp.beginPacket(spanAddress, spanPort);
+      udp.write(0x01); //message identifyer
       Udp.write(height_photoresistor);
-      Udp.endPacket();*/
+      Udp.endPacket();
+
+      Serial.print("sent photoresistor value: ");
+      Serial.print(height_photoresistor);
     }
-          
+    // make sure the value is 0 or positive.
     if (height_ultrasonic <= 0.0) {
         height_ultrasonic = 0;
     } 
-    // only send if value changed by 10mm or more
+    // only send if value changed by more than hysteresis_ultrasonic
     if ((height_ultrasonic > prev_height_ultrasonic + hysteresis_ultrasonic) || (height_ultrasonic < prev_height_ultrasonic - hysteresis_ultrasonic)) {
 
       uint8_t height_ultrasonic_u8= height_ultrasonic;
-      /*Udp.beginPacket(spanAddress, spanPort);
-      udp.write(0x02);  //identifyer
+      Udp.beginPacket(spanAddress, spanPort);
+      udp.write(0x02);  //message identifyer
       Udp.write(height_ultrasonic_u8);
-      Udp.endPacket();*/
+      Udp.endPacket();
       Serial.print("sent ultrasonic value: ");
       Serial.print(height_ultrasonic_u8);
       Serial.print("  ");
@@ -177,6 +189,7 @@ void loop() {
       prev_height_ultrasonic = height_ultrasonic;
     }
 #else
+// transmiting over NB-IOT is turned OFF
     //plot values
     plot_values(strings, analog_read_buffer, sizeof(analog_read_buffer) / sizeof(analog_read_buffer[0]));
     Serial.print(" , ");
@@ -187,16 +200,8 @@ void loop() {
     Serial.println();
 #endif  //DISABLE_NBIOT
     prev_height_photoresistor = height_photoresistor;
-    //plot values
-    /*plot_values(strings, analog_read_buffer, sizeof(analog_read_buffer) / sizeof(analog_read_buffer[0]));
-    Serial.print(", height_photoresistor:");
-    Serial.print(height_photoresistor);
-    Serial.println();*/
     delay_timer = millis();
 
-    //send_all_photoresistirs_u8(analog_read_buffer, sizeof(analog_read_buffer)/sizeof(analog_read_buffer[0]));
   }
   delay(10);
-  //Serial.println(digitalRead(ECHO_PIN));
-  //ultrasonic_get_measurement_in_ns(TRIGGER_PIN,ECHO_PIN);
 }
