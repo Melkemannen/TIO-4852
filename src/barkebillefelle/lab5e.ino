@@ -81,9 +81,9 @@ int send_all_photoresistirs_u8(uint16_t output[], int length) {
 
 
 uint16_t linearize_photoresistor(float R1, float R_dark, uint16_t data, uint16_t max_value) {
-  // output= (data/max_value - 1)*R1 + R_dark
+  // output= (max_value/data - 1)*R1 + R_dark
   float output = 0;
-  output = 1 - ((float)data / (float)max_value);
+  output =  ((float)max_value / (float) data) -1 ;
   output = output * R1 - R_dark;
   return -output;
 }

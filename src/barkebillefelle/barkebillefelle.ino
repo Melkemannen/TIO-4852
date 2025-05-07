@@ -122,14 +122,14 @@ void loop() {
 
     for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
       // FIR-filter. used as moving average.
-      /*analog_read_buffer[i] = firFilter(photoresistor_FIR_buffer[i], MOVING_AVERAGE_LENGTH,
+      analog_read_buffer[i] = firFilter(photoresistor_FIR_buffer[i], MOVING_AVERAGE_LENGTH,
                                         FIR_scalars_divider, photoresistor_ringbuffer_ptr, analog_read_buffer[i]);
       //linearize. from "voltage" to light intensity
       analog_read_buffer[i] = linearize_photoresistor(R1[i], R_dark[i], analog_read_buffer[i], ANALOG_MAX);
       
     }
     photoresistor_ringbuffer_ptr = (photoresistor_ringbuffer_ptr + 1) % MOVING_AVERAGE_LENGTH;
-    */
+  
     for (int i = 0; i < NUMBER_OF_SENSORS; i++) {
       if (i != REFFERENCE_MEASURMENT) {
         //intefrate hysterisys into the measurment to reduce flickering.

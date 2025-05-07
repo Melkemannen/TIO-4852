@@ -8,8 +8,8 @@ if nargin != 4
     %print("Usage: octave make_plott.m <input_file> <variable_name> <output_file> \n all variables of form <variable_name>* will be used");
     input_file = "./output_files/data.mat";
     %variable_name= "ultrasonic__measurment_dynamic_fixed___2025_03_12_1510";
-    variable="ultrasonic";
-    %variable="A5";
+    %variable="ultrasonic";
+    variable="A1";
     variable_name=strcat(variable,"__measurment_dynamic_fixed___2025_03_26");
     output_file = strcat("./output_files/",variable_name,".svg");
     struct_name = "concatinated_data";
@@ -80,14 +80,16 @@ clear old_struct;
     legend_handles_lines = findobj(legend_handle, 'Type', 'line');
 set(legend_handles_lines, 'LineWidth', 20);
    % title(strcat(variable_name,'. photoresistors scaled by a factor 20'));
-    titleName= strcat("timedata of sensor-",variable);
+   plotName= variable;
+   %plotName= "sonar";
+    titleName= strcat("timedata of sensor-",plotName);
     title(titleName);
     xlabel('time [S]');
-    ylabel('height [cm]');
+    ylabel('Resistance[Ohm]');
 
     % Save the plot as an SVG file
-    yticks(0:50:500);
-    xticks(0:50:400);
+    %yticks(0:50:500);
+    xticks(5:20:140);
     xtickangle (45);
     %print(strcat(output_folder,name,".svg"), '-dsvg');
     print( output_file, '-dsvg');
@@ -108,7 +110,7 @@ set(legend_handles_lines, 'LineWidth', 20);
             dispName= dispName(length(variable_name)+1:length(dispName));
             dispName= strrep (dispName, "_", "-");
             meanPlot{j}(1,:)
-            plot(cell2mat(meanPlot{j}), 'DisplayName', dispName);
+            plot([0,10,30,50,70],cell2mat(meanPlot{j}), 'DisplayName', dispName);
 
 
 
@@ -135,14 +137,14 @@ set(legend_handles_lines, 'LineWidth', 20);
     legend_handles_lines = findobj(legend_handle, 'Type', 'line');
 set(legend_handles_lines, 'LineWidth', 20);
    % title(strcat(variable_name,'. photoresistors scaled by a factor 20'));
-    titleName= strcat("mean value-",variable);
+    titleName= strcat("mean value-",plotName);
     title(titleName);
     xlabel('time [S]');
-    ylabel('height [cm]');
+    ylabel('Resistance[Ohm]');
    grid on;
     % Save the plot as an SVG file
     %yticks(0:50:500);
-    %xticks(0:50:400);
+    xticks(10:20:100);
     xtickangle (45);
     strcat(output_folder,variable,"_mean_value.svg")
     print(strcat(output_folder,variable,"_mean_value.svg"), '-dsvg');
